@@ -1,0 +1,88 @@
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title>Document</title>
+</head>
+<body>
+	<div style="position: absolute;width: 1200;height:700px; border: 2px solid black;left:0;right:0;margin: auto;">
+		<div style="position: absolute;top: 0;left:600px;border-right: 2px solid black;height: 700px;"></div>
+		<video id='v' controls style="width: 600px;height: 300px;margin-top:175px;">
+		   <source src="video.mp4" type="video/mp4">
+		</video>
+		<canvas style="position: absolute;left: 600px;width: 600px;height: 300px;margin-top:175px;" id='c'></canvas>
+	</div>
+
+	<script type="text/javascript">
+		document.addEventListener('DOMContentLoaded', function(){
+	    var v = document.getElementById('v');
+	    var canvas = document.getElementById('c');
+	    var context = canvas.getContext('2d');
+	    var back = document.createElement('canvas');
+	    var backcontext = back.getContext('2d');
+
+	    var cw,ch;
+	    
+	    v.addEventListener('play', function(){
+	        cw = v.clientWidth;
+	        ch = v.clientHeight;
+	        canvas.width = cw;
+	        canvas.height = ch;
+	        back.width = cw;
+	        back.height = ch;
+	        draw(v,context,backcontext,cw,ch);
+	       
+	    	},false);
+
+		},false);
+
+	function draw(v,c,bc,w,h) {
+	    if(v.paused || v.ended) return false;
+
+	    bc.drawImage(v,0,0,w,h);
+
+	    var idata = bc.getImageData(0,0,w,h);
+	    var data = idata.data;
+	    for(var i = 0; i < data.length; i+=4) {
+	        var r = data[i];
+	        var g = data[i+1];
+	        var b = data[i+2];
+	        var brightness = (r+g+b)/3;
+	        data[i] = brightness;
+	        data[i+1] = brightness;
+	        data[i+2] = brightness;
+	    }
+
+	    var data2=[];
+	    for(var i = 0; i < data.length; i+=4) {
+	       var row=Math.trunc((i/4)/w);
+	       var col=(i/4)%w;
+	       var x1=data[((row-1)*w+col-1)*4]!=undefined?data[((row-1)*w+col-1)*4]:0;
+	       var x2=data[((row-1)*w+col)*4]!=undefined?data[((row-1)*w+col)*4]:0;
+	       var x3=data[((row-1)*w+col+1)*4]!=undefined?data[((row-1)*w+col+1)*4]:0;
+	       var x4=data[((row)*w+col-1)*4]!=undefined?data[((row)*w+col-1)*4]:0;
+	       var x6=data[((row)*w+col+1)*4]!=undefined?data[((row)*w+col+1)*4]:0;
+	       var x7=data[((row+1)*w+col-1)*4]!=undefined?data[((row+1)*w+col-1)*4]:0;
+	       var x8=data[((row+1)*w+col)*4]!=undefined?data[((row+1)*w+col)*4]:0;
+	       var x9=data[((row+1)*w+col+1)*4]!=undefined?data[((row+1)*w+col+1)*4]:0;
+
+	       var p1=-x1+x3-2*x4+2*x6-x7+x9;
+	       var p2=-x1-2*x2-x3+x7+2*x8+x9;
+	       var kq=Math.sqrt(p1*p1+p2*p2);
+	       kq=kq>=150?255:0;
+	       data2[i]=kq;
+	       data2[i+1]=kq;
+	       data2[i+2]=kq;
+	       data2[i+3]=255;
+	      
+	    }
+	    for(var i = 0; i < data.length; i++) {
+	    	data[i]=data2[i];	    	
+	    }
+
+	    idata.data = data;
+	    c.putImageData(idata,0,0);
+	    setTimeout(function(){ draw(v,c,bc,w,h); }, 25);
+	}
+	</script>
+</body>
+</html>
